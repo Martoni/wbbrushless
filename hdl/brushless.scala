@@ -9,15 +9,27 @@ class BrushlessModule(c: Clock = null, freq: Int = 1250000) extends Module(c) {
   val io = new Bundle {
         /* parameters */
         val enable = Bool(INPUT)
-        val speed = SInt(INPUT, width=16) 
+        val dir = Bool(INPUT)
+        val speed = UInt(INPUT, width=15)
         /* output */
         val phases = Vec.fill(3){new Phase()}
   }
 
+  /* counter */
+  val count = Reg(init=UInt(0, width=16))
+  val timeout = Bool(false)
+  when(count < speed) {
+    count := count + UInt(1)
+    timeout := Bool(false)
+  }.otherwise {
+    count := UInt(0)
+    timeout := Bool(true)
+  }
 
-  val count = Reg(init=UInt(0, width=6))
+  /* state machine */
+  val s_p1 :: s_p2 :: s_p3 :: s_p4 :: s_p5 :: s_p6 :: Nil = Enum(UInt(), 6)
+  val state = Reg(init=s_p1)
 
-  count := count + UInt(1)
 
   io.phases(0).p := Bool(true)
 
