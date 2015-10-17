@@ -86,6 +86,7 @@ class BrushlessTests(c: BrushlessModule) extends Tester(c) {
 
 object brushless {
   def main(args: Array[String]): Unit = {
+      chiselMain(Array[String]("--backend", "v"), () => Module(new BrushlessModule()))
       chiselMainTest(Array[String]("--backend", "c", "--compile", "--test", "--genHarness", "--vcd"),
        () => Module(new BrushlessModule())){c => new BrushlessTests(c)}
   }
