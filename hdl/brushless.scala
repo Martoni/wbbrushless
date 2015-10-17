@@ -17,8 +17,8 @@ class BrushlessModule(c: Clock = null, freq: Int = 1250000) extends Module(c) {
 
   /* counter */
   val count = Reg(init=UInt(0, width=16))
-  val timeout = Bool(false)
-  when(count < speed) {
+  val timeout = Reg(init=Bool(false))
+  when(count < io.speed) {
     count := count + UInt(1)
     timeout := Bool(false)
   }.otherwise {
@@ -31,13 +31,57 @@ class BrushlessModule(c: Clock = null, freq: Int = 1250000) extends Module(c) {
   val state = Reg(init=s_p1)
 
 
-  io.phases(0).p := Bool(true)
+  switch(state) {
+      is(s_p1) {
+          when(timeout) {
+            when(io.dir) { state := s_p2 }
+                .otherwise { state := s_p6 }
+          }
+      }
+      is(s_p2) {
+          when(timeout) {
+            when(io.dir) { state := s_p3 }
+                .otherwise { state := s_p1 }
+          }
+      }
+      is(s_p3) {
+          when(timeout) {
+            when(io.dir) { state := s_p4 }
+                .otherwise { state := s_p2 }
+          }
+      }
+      is(s_p4) {
+          when(timeout) {
+            when(io.dir) { state := s_p5 }
+                .otherwise { state := s_p3 }
+          }
+      }
+      is(s_p5) {
+          when(timeout) {
+            when(io.dir) { state := s_p6 }
+                .otherwise { state := s_p4 }
+          }
+      }
+      is(s_p6) {
+          when(timeout) {
+            when(io.dir) { state := s_p1 }
+                .otherwise { state := s_p5 }
+          }
+      }
+  }
 
+  io.phases(0).p := !(state===s_p2 && state===s_p3)
+  io.phases(0).n := (state===s_p5 && state===s_p6)
+  io.phases(1).p := !(state===s_p1 && state===s_p6)
+  io.phases(1).n := (state===s_p3 && state===s_p4)
+  io.phases(2).p := !(state===s_p4 && state===s_p5)
+  io.phases(2).n := (state===s_p1 && state===s_p2)
 }
 
 class BrushlessTests(c: BrushlessModule) extends Tester(c) {
     poke(c.io.enable, 1)
-    step(10)
+    poke(c.io.speed, 5)
+    step(50)
 }
 
 object brushless {
